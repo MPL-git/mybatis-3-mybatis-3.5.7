@@ -32,10 +32,15 @@ public class MybatisTest {
     // 注意：配置文件并没有被解析
     InputStream resourceAsStream = Resources.getResourceAsStream("sqlMapConfig.xml");
 
-    // 2、（1）解析了配置文件，封装 configuration 对象
+    // 2、解析配置文件，及 Mapper XML 文件逻辑
+    // （1）解析了配置文件，封装 configuration 对象
     // （2）创建 DefaultSqlSessionFactory 工厂对象
     SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(resourceAsStream);
 
+    // 3、执行器逻辑
+    // （1）创建事务对象
+    // （2）创建了执行器对象 cacheingExecutor
+    // （3）DefaultSqlSession 对象
     SqlSession sqlSession = sqlSessionFactory.openSession();
 
     User user = sqlSession.selectOne("user.findUserById", 1);

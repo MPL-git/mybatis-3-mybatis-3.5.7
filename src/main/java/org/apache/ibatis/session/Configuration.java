@@ -126,6 +126,9 @@ public class Configuration {
   // 允许使用方法签名中的名称作为语句参数名称。为了使用该特性，你的工程必须采用 Java 8 编译，
   // 并且加上 -parameters 选项。（从 3.4.1 开始）
   protected boolean useActualParamName = true;
+  // 当返回行的所有列都是空时，Mybatis 默认返回 null。
+  // 当开启这个设置时，Mybatis 会返回一个空实例
+  // 请注意，它也使用于嵌套的结果集（i.e.collection and association）。（从3.4.2开始）
   protected boolean returnInstanceForEmptyRow;
   protected boolean shrinkWhitespacesInSql;
 
@@ -139,10 +142,17 @@ public class Configuration {
   protected Integer defaultStatementTimeout;
   protected Integer defaultFetchSize;
   protected ResultSetType defaultResultSetType;
+  // 默认执行器类型
   protected ExecutorType defaultExecutorType = ExecutorType.SIMPLE;
+  // 指定 Mybatis 应如何自动映射列到字段或属性。
+  // NODE 表示取消自动映射
+  // PARTIAL 只会自动映射没有定义嵌套结果集映射的结果集。
+  // PULL 会自动映射任意复杂的结果集（无论是否嵌套）。
   protected AutoMappingBehavior autoMappingBehavior = AutoMappingBehavior.PARTIAL;
+  // 指定发现自动映射目标未知列（或者未知属性类型）的行为。这个值应该设置为 WARNING 比较合适
   protected AutoMappingUnknownColumnBehavior autoMappingUnknownColumnBehavior = AutoMappingUnknownColumnBehavior.NONE;
 
+  // settings 下的 properties 属性
   protected Properties variables = new Properties();
   protected ReflectorFactory reflectorFactory = new DefaultReflectorFactory();
   protected ObjectFactory objectFactory = new DefaultObjectFactory();
@@ -700,9 +710,11 @@ public class Configuration {
     } else {
       executor = new SimpleExecutor(this, transaction);
     }
+    // 如果允许缓存，会通过 CachingExecutor 去代理一层
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }
+    // 拦截器插件
     executor = (Executor) interceptorChain.pluginAll(executor);
     return executor;
   }

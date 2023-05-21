@@ -44,6 +44,10 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
   @Override
   public SqlSession openSession() {
+    // 调用 openSessionFromDataSource
+    // 参数1：执行器类型
+    // 参数2：事务隔离级别
+    // 参数3：指定事务是否自动提交
     return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, false);
   }
 
@@ -90,10 +94,15 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
   private SqlSession openSessionFromDataSource(ExecutorType execType, TransactionIsolationLevel level, boolean autoCommit) {
     Transaction tx = null;
     try {
+      // 从 configuration 对象中获取 environment 对象
       final Environment environment = configuration.getEnvironment();
+      // 获得事务工厂对象
       final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
+      // 构建事务对象
       tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
+      // 创建执行器对象
       final Executor executor = configuration.newExecutor(tx, execType);
+      // 创建 DefaultSqlSession 对象
       return new DefaultSqlSession(configuration, executor, autoCommit);
     } catch (Exception e) {
       closeTransaction(tx); // may have fetched a connection so lets call close()

@@ -47,6 +47,7 @@ public class XMLScriptBuilder extends BaseBuilder {
     super(configuration);
     this.context = context;
     this.parameterType = parameterType;
+    // 初始化动态 SQL 中的节点处理器集合
     initNodeHandlerMap();
   }
 
@@ -63,12 +64,21 @@ public class XMLScriptBuilder extends BaseBuilder {
     nodeHandlerMap.put("bind", new BindHandler());
   }
 
+  /**
+   * 解析 select\insert\update\delete 标签中的 SQL 语句，
+   * 最终将解析到的 SqlNode 封装到 MixedSqlNode 中的 List 集合中
+   */
   public SqlSource parseScriptNode() {
+    // 将带有 ${} 号的 SQL 信息封装到 TextSqlNode
+    // 将带有 #{} 号的 SQL 信息封装到 StaticTextSqlNode
+    // 将动态 SQL 标签中的 SQL 信息分别封装到不同的 SqlNode 中
     MixedSqlNode rootSqlNode = parseDynamicTags(context);
     SqlSource sqlSource;
     if (isDynamic) {
+      // 如果 SQL 中包含 ${} 和动态 SQL 语句，则将 SqlNode 封装到不同的 DynamicSqlSource
       sqlSource = new DynamicSqlSource(configuration, rootSqlNode);
     } else {
+      // 如果 SQL 中包含 #{}，则将 SqlNode 封装到 RawSqlSource 中，并指定 parameterType
       sqlSource = new RawSqlSource(configuration, rootSqlNode, parameterType);
     }
     return sqlSource;
@@ -76,25 +86,34 @@ public class XMLScriptBuilder extends BaseBuilder {
 
   protected MixedSqlNode parseDynamicTags(XNode node) {
     List<SqlNode> contents = new ArrayList<>();
+    // 获取 <select>\<insert> 等4个标签的子节点，子节点包括元素节点和文本节点
     NodeList children = node.getNode().getChildNodes();
     for (int i = 0; i < children.getLength(); i++) {
       XNode child = node.newXNode(children.item(i));
+      // 处理文本节点
       if (child.getNode().getNodeType() == Node.CDATA_SECTION_NODE || child.getNode().getNodeType() == Node.TEXT_NODE) {
         String data = child.getStringBody("");
+        // 将文本内容封装到 SqlNode 中
         TextSqlNode textSqlNode = new TextSqlNode(data);
+        // SQL 语句中带有 ${} 的话，就表示是 dynamic 的
         if (textSqlNode.isDynamic()) {
           contents.add(textSqlNode);
           isDynamic = true;
         } else {
+          // SQL 语句中（除了 ${} 和下面的动态 SQL 标签），就表示是 static 的
+          // StaticTextSqlNode 的 apply 只是进行字符串的追加操作
           contents.add(new StaticTextSqlNode(data));
         }
+        // 处理元素节点
       } else if (child.getNode().getNodeType() == Node.ELEMENT_NODE) { // issue #628
         String nodeName = child.getNode().getNodeName();
+        // 动态 SQL 标签处理器
         NodeHandler handler = nodeHandlerMap.get(nodeName);
         if (handler == null) {
           throw new BuilderException("Unknown element <" + nodeName + "> in SQL statement.");
         }
         handler.handleNode(child, contents);
+        // 动态 SQL 标签是 dynamic 的
         isDynamic = true;
       }
     }
