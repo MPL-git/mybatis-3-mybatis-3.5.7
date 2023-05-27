@@ -45,12 +45,13 @@ public class CacheKey implements Cloneable, Serializable {
   private static final int DEFAULT_MULTIPLIER = 37;
   private static final int DEFAULT_HASHCODE = 17;
 
-  private final int multiplier;
-  private int hashcode;
-  private long checksum;
-  private int count;
+  private final int multiplier;  //参与 hash 运算的乘数
+  private int hashcode; // cacheKey 的 hash 值，在 update 函数中实时算出来
+  private long checksum; //校验和，hash 值的和
+  private int count; // updateList 的中的元素个数
   // 8/21/2017 - Sonarlint flags this as needing to be marked transient. While true if content is not serializable, this
   // is not always true and thus should not be marked transient.
+  // 根据该集合中的元素判断两个 cacheKey 是否相同
   private List<Object> updateList;
 
   public CacheKey() {
@@ -70,14 +71,17 @@ public class CacheKey implements Cloneable, Serializable {
   }
 
   public void update(Object object) {
+    // 获取参数的 object 的 hash 值
     int baseHashCode = object == null ? 1 : ArrayUtil.hashCode(object);
 
+    // 更新 count、checksum 以及 hashcode 的值
     count++;
     checksum += baseHashCode;
     baseHashCode *= count;
 
+    // 将对象添加到 list 集合中
     hashcode = multiplier * hashcode + baseHashCode;
-
+    // 将对象添加到 list 集合中
     updateList.add(object);
   }
 
@@ -87,27 +91,35 @@ public class CacheKey implements Cloneable, Serializable {
     }
   }
 
+  /**
+   * HashNap 中的比较 key 是这样的，先求出 key 的 hashcode()，比较其值是否相等，
+   * 若相等再比较 equals()，若相等则认为他们是同一个对象
+   */
   @Override
   public boolean equals(Object object) {
+    // 比较是不是同一个对象
     if (this == object) {
       return true;
     }
+    // 是否类型相同
     if (!(object instanceof CacheKey)) {
       return false;
     }
 
     final CacheKey cacheKey = (CacheKey) object;
-
+    // hashcode 是否相同
     if (hashcode != cacheKey.hashcode) {
       return false;
     }
+    // checksum 是否相同
     if (checksum != cacheKey.checksum) {
       return false;
     }
+    // count 是否相同
     if (count != cacheKey.count) {
       return false;
     }
-
+    // 按顺序比较 updateList 中元素的 hash 值是否相同
     for (int i = 0; i < updateList.size(); i++) {
       Object thisObject = updateList.get(i);
       Object thatObject = cacheKey.updateList.get(i);

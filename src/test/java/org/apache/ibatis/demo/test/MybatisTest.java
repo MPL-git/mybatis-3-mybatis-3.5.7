@@ -42,9 +42,15 @@ public class MybatisTest {
     // （1）创建事务对象
     // （2）创建了执行器对象 cacheingExecutor
     // （3）DefaultSqlSession 对象
-    // （4）
+    // （4）使用到 装饰者模式
     SqlSession sqlSession = sqlSessionFactory.openSession();
 
+    // 4、委派给 Exector 来执行，Executor 执行时又会调用很多其他组件：
+    // （1）参数设置
+    // （2）解析sql的获取
+    // （3）sql的执行
+    // （4）结果集的封装
+    // wrapCollection(parameter) 使用到 装饰者模式
     User user = sqlSession.selectOne("user.findUserById", 1);
 
     System.out.println(user);

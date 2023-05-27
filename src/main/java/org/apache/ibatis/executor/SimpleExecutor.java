@@ -57,11 +57,16 @@ public class SimpleExecutor extends BaseExecutor {
   public <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) throws SQLException {
     Statement stmt = null;
     try {
+      // 1、获取配置实例
       Configuration configuration = ms.getConfiguration();
+      // 2、new 一个StatementHandler 实例
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+      // 3、准备处理器，主要包括创建 statement 以及动态参数的设置
       stmt = prepareStatement(handler, ms.getStatementLog());
+      // 4、执行真正的数据库操作调用
       return handler.query(stmt, resultHandler);
     } finally {
+      // 5、关闭 statement
       closeStatement(stmt);
     }
   }
@@ -83,9 +88,13 @@ public class SimpleExecutor extends BaseExecutor {
 
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
+    // 1、获取代理后（增加日志功能）的 Connection 对象
     Connection connection = getConnection(statementLog);
+    // 2、创建 Statement 对象（可能是一个 SimpleStatement，一个 PreparedStatement 或 CallableStatement）
     stmt = handler.prepare(connection, transaction.getTimeout());
+    // 3、参数化处理
     handler.parameterize(stmt);
+    // 4、返回执行前最后准备好的 Statement 对象
     return stmt;
   }
 

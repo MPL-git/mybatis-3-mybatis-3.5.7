@@ -82,9 +82,12 @@ public class CachingExecutor implements Executor {
     return delegate.queryCursor(ms, parameter, rowBounds);
   }
 
+  // 第一步
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+    // 获取绑定的 SQL 语句，比如 “select * from user where id = ?”
     BoundSql boundSql = ms.getBoundSql(parameterObject);
+    // 生成缓存 key
     CacheKey key = createCacheKey(ms, parameterObject, rowBounds, boundSql);
     return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
@@ -92,20 +95,27 @@ public class CachingExecutor implements Executor {
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql)
       throws SQLException {
+    // 获取二级缓存
     Cache cache = ms.getCache();
     if (cache != null) {
+      // 刷新二级缓存（存在缓存且 flushCache 为 true）
       flushCacheIfRequired(ms);
       if (ms.isUseCache() && resultHandler == null) {
         ensureNoOutParams(ms, boundSql);
+        // 从二级缓存中查询数据
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);
+        // 如果二级缓存中没有查询到数据，则查询一级缓存及数据库
         if (list == null) {
+          // 委托给 BaseExecutor 执行
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+          // 将查询结果，要存到二级缓存中（注意：此处只是存到 map 集合中，没有真正存到二级缓存中）
           tcm.putObject(cache, key, list); // issue #578 and #116
         }
         return list;
       }
     }
+    // 委托给 BaseExecutor 执行
     return delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 

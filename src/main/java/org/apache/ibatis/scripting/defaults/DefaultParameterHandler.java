@@ -61,12 +61,16 @@ public class DefaultParameterHandler implements ParameterHandler {
   @Override
   public void setParameters(PreparedStatement ps) {
     ErrorContext.instance().activity("setting parameters").object(mappedStatement.getParameterMap().getId());
+    // 1、获取 boundSql 中的参数映射信息列表
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
     if (parameterMappings != null) {
+      // 1.1、遍历参数映射列表，这个列表信息就是我们 xml 文件中定义的某个查询语句的所有参数映射信息，主要这个 List 中的 ParameterMapping
       for (int i = 0; i < parameterMappings.size(); i++) {
         ParameterMapping parameterMapping = parameterMappings.get(i);
+        // 1.2、只有入参类型才会设置 PreparedStatement
         if (parameterMapping.getMode() != ParameterMode.OUT) {
           Object value;
+          // 取出参数名，这里比如说是“id”
           String propertyName = parameterMapping.getProperty();
           if (boundSql.hasAdditionalParameter(propertyName)) { // issue #448 ask first for additional params
             value = boundSql.getAdditionalParameter(propertyName);
@@ -75,15 +79,21 @@ public class DefaultParameterHandler implements ParameterHandler {
           } else if (typeHandlerRegistry.hasTypeHandler(parameterObject.getClass())) {
             value = parameterObject;
           } else {
+            // 1.3、这一步的工作就是从当前实际传入的参数中获取到指定 key（‘id’）的 value 值
+            // 比如是 ‘15800000000’
             MetaObject metaObject = configuration.newMetaObject(parameterObject);
             value = metaObject.getValue(propertyName);
           }
+
+          // 2、获取该参数对应的 typeHandler
           TypeHandler typeHandler = parameterMapping.getTypeHandler();
+          // 2.1、获取该参数对应的 jdbcType
           JdbcType jdbcType = parameterMapping.getJdbcType();
           if (value == null && jdbcType == null) {
             jdbcType = configuration.getJdbcTypeForNull();
           }
           try {
+            // 3、重点是调用每个参数对应的 typeHandler 的 setParameter 方法为该 ps 设置正确的参数值
             typeHandler.setParameter(ps, i + 1, value, jdbcType);
           } catch (TypeException | SQLException e) {
             throw new TypeException("Could not set parameters for mapping: " + parameterMapping + ". Cause: " + e, e);
