@@ -64,6 +64,7 @@ public class SqlSessionFactoryBuilder {
     return build(inputStream, null, null);
   }
 
+  // environment：传入的运行环境信息的 id 值
   public SqlSessionFactory build(InputStream inputStream, String environment) {
     return build(inputStream, environment, null);
   }
