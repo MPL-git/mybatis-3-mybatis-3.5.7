@@ -132,15 +132,28 @@ public class Configuration {
   protected boolean returnInstanceForEmptyRow;
   protected boolean shrinkWhitespacesInSql;
 
+  // 指定 MyBatis 增加到日志名称的前缀。
   protected String logPrefix;
+  // 指定 MyBatis 所用日志的具体实现，未指定时将自动查找。一般建议指定为slf4j或log4j
   protected Class<? extends Log> logImpl;
+  // 指定VFS的实现, VFS是mybatis提供的用于访问AS内资源的一个简便接口
   protected Class<? extends VFS> vfsImpl;
   protected Class<?> defaultSqlProviderType;
+  // MyBatis 利用本地缓存机制（Local Cache）防止循环引用（circular references）和加速重复嵌套查询。
+  // 默认值为 SESSION，这种情况下会缓存一个会话中执行的所有查询。
+  // 若设置值为 STATEMENT，本地会话仅用在语句执行上，对相同 SqlSession 的不同调用将不会共享数据。
   protected LocalCacheScope localCacheScope = LocalCacheScope.SESSION;
+  // 当没有为参数提供特定的 JDBC 类型时，为空值指定 JDBC 类型。 某些驱动需要指定列的 JDBC 类型，
+  // 多数情况直接用一般类型即可，比如 NULL、VARCHAR 或 OTHER。
   protected JdbcType jdbcTypeForNull = JdbcType.OTHER;
+  // 指定对象的哪个方法触发一次延迟加载。
   protected Set<String> lazyLoadTriggerMethods = new HashSet<>(Arrays.asList("equals", "clone", "hashCode", "toString"));
+  // 设置超时时间，它决定驱动等待数据库响应的秒数。默认不超时
   protected Integer defaultStatementTimeout;
+  // 为驱动的结果集设置默认获取数量。
   protected Integer defaultFetchSize;
+  // SIMPLE 就是普通的执行器；REUSE 执行器会重用预处理语句（prepared statements）；
+  // BATCH 执行器将重用语句并执行批量更新。
   protected ResultSetType defaultResultSetType;
   // 默认执行器类型
   protected ExecutorType defaultExecutorType = ExecutorType.SIMPLE;
@@ -154,13 +167,19 @@ public class Configuration {
 
   // settings 下的 properties 属性
   protected Properties variables = new Properties();
+  // 默认的反射器工厂,用于操作属性、构造器方便
   protected ReflectorFactory reflectorFactory = new DefaultReflectorFactory();
+  // 对象工厂, 所有的类resultMap类都需要依赖于对象工厂来实例化
   protected ObjectFactory objectFactory = new DefaultObjectFactory();
+  // 对象包装器工厂,主要用来在创建非原生对象,比如增加了某些监控或者特殊属性的代理类
   protected ObjectWrapperFactory objectWrapperFactory = new DefaultObjectWrapperFactory();
 
+  // 延迟加载的全局开关。当开启时，所有关联对象都会延迟加载。特定关联关系中可通过设置fetchType属性来覆盖该项的开关状态
   protected boolean lazyLoadingEnabled = false;
+  // 指定 Mybatis 创建具有延迟加载能力的对象所用到的代理工具。MyBatis 3.3+使用JAVASSIST
   protected ProxyFactory proxyFactory = new JavassistProxyFactory(); // #224 Using internal Javassist instead of OGNL
 
+  // MyBatis 可以根据不同的数据库厂商执行不同的语句，这种多厂商的支持是基于映射语句中的 databaseId 属性
   protected String databaseId;
   /**
    * Configuration factory class.
@@ -171,8 +190,11 @@ public class Configuration {
   protected Class<?> configurationFactory;
 
   protected final MapperRegistry mapperRegistry = new MapperRegistry(this);
+  // mybatis插件列表
   protected final InterceptorChain interceptorChain = new InterceptorChain();
   protected final TypeHandlerRegistry typeHandlerRegistry = new TypeHandlerRegistry(this);
+  // 类型注册器, 用于在执行sql语句的出入参映射以及mybatis-config文件里的各种配置
+  // 比如<transactionManager type="JDBC"/><dataSource type="POOLED">时使用简写
   protected final TypeAliasRegistry typeAliasRegistry = new TypeAliasRegistry();
   protected final LanguageDriverRegistry languageRegistry = new LanguageDriverRegistry();
 
